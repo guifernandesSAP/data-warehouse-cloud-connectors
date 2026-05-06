@@ -423,14 +423,11 @@ StartLogin = (dataSourcePath, state, display, connections) =>
 
 FinishLogin = (context, callbackUri, state) =>
     let
-        Parts = Uri.Parts(callbackUri)[Query]
-    in
-        TokenMethod(Parts[code], context);
-
-TokenMethod = (code, connection) =>
-    let
-         BasicAuth = Binary.ToText(Text.ToBinary(connection[client_id] & ":" & connection[client_secret]),0),
-         Response  = Web.Contents(
+        Parts = Uri.Parts(callbackUri)[Query],
+        code = Parts[code],
+        connection = context,
+        BasicAuth = Binary.ToText(Text.ToBinary(connection[client_id] & ":" & connection[client_secret]),0),
+        Response = Web.Contents(
             connection[auth_token_url],
             [Content = Text.ToBinary(Uri.BuildQueryString(
                 [
@@ -439,7 +436,8 @@ TokenMethod = (code, connection) =>
                     redirect_uri = redirect_uri
                 ])),
                 Headers=[#"Content-type" = "application/x-www-form-urlencoded",#"Accept" = "application/json", #"Authorization" = "Basic " & BasicAuth],
-                ManualCredentials = true
+                ManualCredentials = true,
+                ManualStatusHandling = {400, 401, 403}
             ]),
         TokenList = Json.Document(Response)
     in
@@ -455,7 +453,8 @@ TokenClientCredentials = (clientId, clientSecret, tokenUrl) =>
                     grant_type = "client_credentials"
                 ])),
                 Headers=[#"Content-type" = "application/x-www-form-urlencoded",#"Accept" = "application/json", #"Authorization" = "Basic " & BasicAuth],
-                ManualCredentials = true
+                ManualCredentials = true,
+                ManualStatusHandling = {400, 401, 403}
             ]),
         TokenList = Json.Document(Response)
     in
@@ -491,7 +490,8 @@ Refresh_DWC = (dataSourcePath, oldCredential) =>
                       connection[auth_token_url],
                       [ Content = Request,
                         Headers = RequestHeaders,
-                        ManualCredentials = true ]),
+                        ManualCredentials = true,
+                        ManualStatusHandling = {400, 401, 403} ]),
 
         NewTokenList = Json.Document(Response)
     in
